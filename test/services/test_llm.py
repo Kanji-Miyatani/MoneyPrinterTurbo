@@ -801,9 +801,9 @@ class TestLiteLLMProvider(unittest.TestCase):
                 self.assertNotIn("{default_base_url}", rendered)
 
     def test_primary_provider_tips_use_consistent_structure(self):
-        """中英文配置说明统一展示 API Key、Base URL 和模型名称。"""
+        """中英日配置说明统一展示 API Key、Base URL 和模型名称。"""
         i18n_dir = Path(__file__).parent.parent.parent / "webui" / "i18n"
-        for language in ("zh", "en"):
+        for language in ("zh", "en", "ja"):
             translations = json.loads(
                 (i18n_dir / f"{language}.json").read_text(encoding="utf-8")
             )["Translation"]

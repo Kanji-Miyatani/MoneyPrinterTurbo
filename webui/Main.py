@@ -98,6 +98,8 @@ config_file = os.path.join(root_dir, "webui", ".streamlit", "webui.toml")
 # 语言列表必须在会话状态初始化前可用，首次访问时才能把浏览器 locale 映射到
 # 项目真正支持的语言；自动识别结果只进入当前会话，不修改全局配置。
 locales = utils.load_locales(i18n_dir)
+# 这些语言连 Provider 配置说明在内完整维护全部文案，其它语言缺失项回退英文。
+FULLY_TRANSLATED_UI_LANGUAGES = frozenset({"zh", "en", "ja"})
 DEFAULT_CHATTERBOX_BASE_URL = "http://127.0.0.1:4123/v1"
 DEFAULT_CHATTERBOX_MODEL = "chatterbox"
 DEFAULT_CHATTERBOX_VOICES = ["default-Female"]
@@ -1849,6 +1851,7 @@ support_locales = [
     "es-ES",
     "fr-FR",
     "it-IT",
+    "ja-JP",
     "ru-RU",
     "vi-VN",
     "th-TH",
@@ -2178,19 +2181,20 @@ def get_llm_provider_tips(provider_id, **kwargs):
     if provider is None:
         return ""
 
-    # Provider 配置说明目前统一维护中文和英文两套规范模板；其它界面语言
+    # Provider 配置说明维护中文、英文和已完成全量翻译的日文；其它界面语言
     # 统一使用英文，避免在 locale 中复制英文后长期不同步。后续某个语种完成
-    # 全量翻译后，再将它加入这里的独立维护范围。
+    # 全量翻译后，再将它加入 FULLY_TRANSLATED_UI_LANGUAGES。
     ui_language = st.session_state.get("ui_language", "en")
-    tips_language = ui_language if ui_language in {"zh", "en"} else "en"
+    tips_language = ui_language if ui_language in FULLY_TRANSLATED_UI_LANGUAGES else "en"
     tips = (
         locales.get(tips_language, {}).get("Translation", {}).get(provider.tips_key, "")
     )
     if not tips:
         return tips
 
+    # 只有中文界面优先推荐中国站，日文等其它界面与英文一样推荐国际站。
     service_endpoint = provider.preferred_service_endpoint(
-        prefer_international=tips_language == "en"
+        prefer_international=tips_language != "zh"
     )
     api_key_url = (
         service_endpoint.api_key_url
@@ -2209,7 +2213,7 @@ def get_llm_provider_tips(provider_id, **kwargs):
             service_endpoint.model_docs_url
             if service_endpoint and service_endpoint.model_docs_url
             else provider.effective_model_docs_url(
-                prefer_international=tips_language == "en"
+                prefer_international=tips_language != "zh"
             )
         ),
         **{
@@ -2256,10 +2260,10 @@ def get_llm_provider_label(provider):
 
 
 def get_tts_provider_tips(provider_id):
-    # TTS 配置说明与 LLM Provider 采用相同维护策略：只维护中英文，
+    # TTS 配置说明与 LLM Provider 采用相同维护策略：只维护全量翻译的语言，
     # 其它界面语言统一回退英文，避免复制后长期不同步。
     ui_language = st.session_state.get("ui_language", "en")
-    tips_language = ui_language if ui_language in {"zh", "en"} else "en"
+    tips_language = ui_language if ui_language in FULLY_TRANSLATED_UI_LANGUAGES else "en"
     return (
         locales.get(tips_language, {})
         .get("Translation", {})
@@ -3281,7 +3285,7 @@ def _render_settings_dialog():
                 tr("Platforms"),
                 options=["tiktok", "instagram", "youtube"],
                 default=config.app.get("upload_post_platforms", ["tiktok", "instagram"]),
-                help="Select platforms to publish to",
+                help=tr("Platforms Help"),
                 key="upload_post_platforms_multiselect"
             )
             if upload_post_platforms != config.app.get("upload_post_platforms", ["tiktok", "instagram"]):

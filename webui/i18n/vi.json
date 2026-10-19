@@ -402,6 +402,7 @@
     "Enable Auto-Publish": "Bật tự động xuất bản",
     "Enable Upload-Post Integration": "Bật tích hợp Upload-Post",
     "Platforms": "Nền tảng",
+    "Platforms Help": "Chọn các nền tảng để đăng",
     "Upload-Post API Key": "Khóa API Upload-Post",
     "Upload-Post API Key Help": "Tạo và sao chép khóa API tại trang [Upload-Post API Keys]({api_keys_url}).",
     "Upload-Post Profile Username": "Tên người dùng hồ sơ Upload-Post",

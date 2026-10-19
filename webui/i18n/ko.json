@@ -402,6 +402,7 @@
     "Enable Auto-Publish": "자동 게시 활성화",
     "Enable Upload-Post Integration": "Upload-Post 연동 활성화",
     "Platforms": "게시 플랫폼",
+    "Platforms Help": "게시할 플랫폼을 선택하세요",
     "Upload-Post API Key": "Upload-Post API 키",
     "Upload-Post API Key Help": "[Upload-Post API 키 페이지]({api_keys_url})에서 API 키를 생성하고 복사하세요.",
     "Upload-Post Profile Username": "Upload-Post 게시 사용자 이름",

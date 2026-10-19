@@ -402,6 +402,7 @@
     "Enable Auto-Publish": "Activa la publicació automàtica",
     "Enable Upload-Post Integration": "Activa la integració amb Upload-Post",
     "Platforms": "Plataformes",
+    "Platforms Help": "Selecciona les plataformes on publicar",
     "Upload-Post API Key": "Clau API d'Upload-Post",
     "Upload-Post API Key Help": "Crea una clau API a [Upload-Post API Keys]({api_keys_url}) i copia-la aquí.",
     "Upload-Post Profile Username": "Nom d'usuari del perfil d'Upload-Post",

@@ -14,6 +14,8 @@ I18N_DIR = ROOT_DIR / "webui" / "i18n"
 LLM_PROVIDER_TIPS_PREFIX = "llm_provider_tips."
 TTS_PROVIDER_TIPS_PREFIX = "tts_provider_tips."
 SECONDARY_LOCALES = ("az", "ca", "de", "es", "fr", "id", "it", "ko", "pt", "ru", "tr", "vi")
+# 日文与中英文一样完整维护全部文案，包括 Provider 长说明和合作方品牌说明。
+FULLY_TRANSLATED_LOCALES = ("ja",)
 PROVIDER_TIPS_PREFIXES = (
     LLM_PROVIDER_TIPS_PREFIX,
     TTS_PROVIDER_TIPS_PREFIX,
@@ -241,6 +243,27 @@ class TestWebuiI18n(unittest.TestCase):
                 self.assertTrue(utils.has_pause_tags(example))
                 self.assertEqual(utils.remove_pause_tags(example).strip(), "")
 
+    def test_japanese_locale_is_discovered_and_matches_browser_variants(self):
+        """日文语言文件自动注册，浏览器的 ja / ja-JP 等区域变体都回退到 ja。"""
+        locales = utils.load_locales(str(I18N_DIR))
+        self.assertEqual(locales["ja"]["Language"], "日本語")
+        for browser_locale in ("ja", "ja-JP", "ja_JP", "JA-jp"):
+            with self.subTest(browser_locale=browser_locale):
+                self.assertEqual(
+                    utils.resolve_ui_language("", browser_locale, locales), "ja"
+                )
+        self.assertEqual(utils.resolve_ui_language("en", "ja-JP", locales), "en")
+
+    def test_japanese_pause_examples_use_supported_syntax(self):
+        """日文帮助中的停顿标签示例必须能被解析并在朗读前移除。"""
+        help_text = _load_translation("ja")["Video Script Help"]
+        examples = re.findall(r"\[(?:pause|silence): [^\]]+\]", help_text)
+        self.assertTrue(examples)
+        for example in examples:
+            with self.subTest(example=example):
+                self.assertTrue(utils.has_pause_tags(example))
+                self.assertEqual(utils.remove_pause_tags(example).strip(), "")
+
     def test_saved_ui_language_takes_priority_over_browser_locale(self):
         language = utils.resolve_ui_language(
             saved_language="de",
@@ -285,7 +308,7 @@ class TestWebuiI18n(unittest.TestCase):
             "https://global.modelmesh.info/model",
         }
 
-        for locale in ("zh", "en"):
+        for locale in ("zh", "en", "ja"):
             with self.subTest(locale=locale):
                 tips = _load_translation(locale)["llm_provider_tips.shengsuanyun"]
                 provider = get_llm_provider("shengsuanyun")
@@ -300,7 +323,7 @@ class TestWebuiI18n(unittest.TestCase):
         """秘塔 Key 获取入口必须保留 MPT 追踪参数，避免赞助转化链路失效。"""
         expected_url = "https://metaso.cn/minimax-h3/?s=MPT"
 
-        for locale in ("zh", "en"):
+        for locale in ("zh", "en", "ja"):
             with self.subTest(locale=locale):
                 label = _load_translation(locale)["Metaso MiniMax API Key"]
                 self.assertEqual(_markdown_urls(label), {expected_url})
@@ -313,6 +336,48 @@ class TestWebuiI18n(unittest.TestCase):
             with self.subTest(locale=locale):
                 locale_keys = set(_load_translation(locale))
                 self.assertEqual(sorted(required_en_keys - locale_keys), [])
+
+    def test_fully_translated_locales_cover_every_english_key(self):
+        """全量翻译语言不依赖英文回退，Provider 说明和品牌文案也必须齐全。"""
+        en_keys = set(_load_translation("en"))
+
+        for locale in FULLY_TRANSLATED_LOCALES:
+            with self.subTest(locale=locale):
+                locale_keys = set(_load_translation(locale))
+                self.assertEqual(sorted(en_keys - locale_keys), [])
+                self.assertEqual(sorted(locale_keys - en_keys), [])
+
+    def test_fully_translated_locales_preserve_placeholders_and_urls(self):
+        en_translations = _load_translation("en")
+
+        for locale in FULLY_TRANSLATED_LOCALES:
+            locale_translations = _load_translation(locale)
+            for key, en_value in en_translations.items():
+                with self.subTest(locale=locale, key=key):
+                    self.assertEqual(
+                        _format_placeholders(locale_translations[key]),
+                        _format_placeholders(en_value),
+                    )
+                    self.assertEqual(
+                        _markdown_urls(locale_translations[key]),
+                        _markdown_urls(en_value),
+                    )
+
+    def test_fully_translated_locales_show_their_own_provider_tips(self):
+        """WebUI 必须把全量翻译语言加入 Provider 说明的独立维护范围。"""
+        tree = ast.parse(WEBUI_MAIN.read_text(encoding="utf-8"))
+        languages = None
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(
+                isinstance(target, ast.Name)
+                and target.id == "FULLY_TRANSLATED_UI_LANGUAGES"
+                for target in node.targets
+            ):
+                languages = ast.literal_eval(node.value.args[0])
+                break
+
+        self.assertIsNotNone(languages)
+        self.assertTrue({"zh", "en", *FULLY_TRANSLATED_LOCALES} <= languages)
 
     def test_secondary_locales_do_not_duplicate_provider_tips(self):
         # Provider 配置长说明只维护中英文，其它语言运行时回退英文。
@@ -385,6 +450,7 @@ class TestWebuiI18n(unittest.TestCase):
         self.assertIsNotNone(support_locales)
         self.assertIn("ru-RU", support_locales)
         self.assertIn("ca-ES", support_locales)
+        self.assertIn("ja-JP", support_locales)
 
     def test_locale_files_do_not_redefine_a_translation_key(self):
         """

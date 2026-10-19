@@ -402,6 +402,7 @@
     "Enable Auto-Publish": "Avtomatik paylaşımı aktivləşdir",
     "Enable Upload-Post Integration": "Upload-Post inteqrasiyasını aktivləşdir",
     "Platforms": "Platformalar",
+    "Platforms Help": "Paylaşılacaq platformaları seçin",
     "Upload-Post API Key": "Upload-Post API açarı",
     "Upload-Post API Key Help": "[Upload-Post API açarları səhifəsində]({api_keys_url}) API açarı yaradılmalı və kopyalanmalıdır.",
     "Upload-Post Profile Username": "Upload-Post profilinin istifadəçi adı",
